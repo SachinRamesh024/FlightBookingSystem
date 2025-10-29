@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyBooker - Flight Booking System</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        /* Simple fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+    <!-- Main Navigation Bar -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div data-lucide="plane-takeoff" class="h-8 w-8 text-blue-600"></div>
+                    <span class="ml-2 text-2xl font-bold text-gray-900">SkyBooker</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showPage('customer-view', 'search-page')" class="text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md">Home</button>
+                    <button onclick="showPage('customer-view', 'my-bookings-page')" class="text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md">My Bookings</button>
+                    <button onclick="showPage('admin-view', 'admin-dashboard-page')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-300">
+                        Admin Portal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- =================================================================== -->
+        <!-- CUSTOMER VIEW -->
+        <!-- =================================================================== -->
+        <div id="customer-view" class="page active fade-in">
+            
+            <!-- Search Page -->
+            <div id="search-page" class="page active fade-in">
+                <div class="bg-white p-8 rounded-2xl shadow-xl max-w-4xl mx-auto">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Find Your Next Adventure</h1>
+                    <p class="text-gray-600 mb-6">Book cheap flights for your dream vacation.</p>
+                    
+                    <form id="search-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="departure-airport" class="block text-sm font-medium text-gray-700 mb-1">From</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" data-lucide="arrow-up-right" class="w-5 h-5 text-gray-400"></div>
+                                    <input type="text" id="departure-airport" class="w-full pl-10 pr-4 py-3 rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm" placeholder="e.g., New York (JFK)" value="New York (JFK)">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="arrival-airport" class="block text-sm font-medium text-gray-700 mb-1">To</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" data-lucide="arrow-down-right" class="w-5 h-5 text-gray-400"></div>
+                                    <input type="text" id="arrival-airport" class="w-full pl-10 pr-4 py-3 rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm" placeholder="e.g., London (LHR)" value="London (LHR)">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="departure-date" class="block text-sm font-medium text-gray-700 mb-1">Departure Date</label>
+                            <input type="date" id="departure-date" class="w-full px-4 py-3 rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm" value="2025-11-15">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2">
+                            <span data-lucide="search" class="w-5 h-5"></span>
+                            <span>Search Flights</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results Page -->
+            <div id="results-page" class="page fade-in">
+                <h2 class="text-2xl font-bold mb-4">Available Flights: <span id="route-title"></span></h2>
+                <div id="flight-results-list" class="space-y-4">
+                    <!-- Flight results will be injected here by JS -->
+                </div>
+            </div>
+
+            <!-- Booking Page -->
+            <div id="booking-page" class="page fade-in">
+                <h2 class="text-2xl font-bold mb-4">Confirm Your Booking</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Passenger Details Form -->
+                    <form id="booking-form" class="md:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-lg font-semibold mb-4 border-b pb-2">Passenger 1 (Adult)</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="first-name" class="block text-sm font-medium text-gray-700">First Name</label>
+                                    <input type="text" id="first-name" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                                </div>
+                                <div>
+                                    <label for="last-name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                    <input type="text" id="last-name" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                                <input type="email" id="email" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                            </div>
+                            <div>
+                                <label for="dob" class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                                <input type="date" id="dob" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                            </div>
+                        </div>
+
+                        <h3 class="text-lg font-semibold mb-4 mt-8 border-b pb-2">Payment Details</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="card-number" class="block text-sm font-medium text-gray-700">Card Number</label>
+                                <input type="text" id="card-number" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" placeholder="•••• •••• •••• ••••" required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="expiry-date" class="block text-sm font-medium text-gray-700">Expiry Date</label>
+                                    <input type="text" id="expiry-date" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" placeholder="MM / YY" required>
+                                </div>
+                                <div>
+                                    <label for="cvc" class="block text-sm font-medium text-gray-700">CVC</label>
+                                    <input type="text" id="cvc" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" placeholder="123" required>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="mt-6 w-full bg-green-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-green-700 transition duration-300">
+                            Confirm & Book
+                        </button>
+                    </form>
+
+                    <!-- Flight Summary -->
+                    <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-lg h-fit">
+                        <h3 class="text-lg font-semibold border-b pb-2 mb-4">Your Flight</h3>
+                        <div id="flight-summary">
+                            <!-- Booking summary will be injected here by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Page -->
+            <div id="confirmation-page" class="page fade-in">
+                <div class="bg-white p-10 rounded-2xl shadow-xl max-w-2xl mx-auto text-center">
+                    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div data-lucide="check-circle" class="w-10 h-10"></div>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+                    <p class="text-gray-600 mb-6">Your booking ID is <strong id="booking-id" class="text-gray-800"></strong>. A confirmation email has been sent to your address.</p>
+                    <button onclick="showPage('customer-view', 'search-page')" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-300">
+                        Book Another Flight
+                    </button>
+                </div>
+            </div>
+
+            <!-- My Bookings Page -->
+            <div id="my-bookings-page" class="page fade-in">
+                <h2 class="text-2xl font-bold mb-4">My Bookings</h2>
+                <div id="bookings-list" class="space-y-4">
+                    <!-- Bookings will be injected here by JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- ADMIN VIEW -->
+        <!-- =================================================================== -->
+        <div id="admin-view" class="page fade-in">
+            <div class="flex flex-col md:flex-row gap-6">
+                
+                <!-- Admin Sidebar -->
+                <aside class="md:w-64 bg-white p-4 rounded-lg shadow-lg h-fit">
+                    <nav class="space-y-1">
+                        <a href="#" onclick="showAdminPage('admin-dashboard-page')" class="admin-nav-link flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 font-medium bg-gray-100">
+                            <span data-lucide="layout-dashboard" class="w-5 h-5"></span>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="#" onclick="showAdminPage('admin-flights-page')" class="admin-nav-link flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-100">
+                            <span data-lucide="plane" class="w-5 h-5"></span>
+                            <span>Manage Flights</span>
+                        </a>
+                        <a href="#" onclick="showAdminPage('admin-passengers-page')" class="admin-nav-link flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-100">
+                            <span data-lucide="users" class="w-5 h-5"></span>
+                            <span>Passenger Lists</span>
+                        </a>
+                        <a href="#" onclick="showPage('customer-view', 'search-page')" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-red-600 font-medium hover:bg-red-50 mt-4">
+                            <span data-lucide="log-out" class="w-5 h-5"></span>
+                            <span>Exit Admin</span>
+                        </a>
+                    </nav>
+                </aside>
+
+                <!-- Admin Content -->
+                <div class="flex-1">
+                    
+                    <!-- Admin Dashboard Page -->
+                    <div id="admin-dashboard-page" class="admin-page active fade-in">
+                        <h2 class="text-2xl font-bold mb-4">Admin Dashboard</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="bg-white p-6 rounded-lg shadow-lg">
+                                <h3 class="text-gray-500 text-sm font-medium">Total Bookings</h3>
+                                <p id="total-bookings-stat" class="text-3xl font-bold text-gray-900 mt-1">0</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-lg">
+                                <h3 class="text-gray-500 text-sm font-medium">Total Flights</h3>
+                                <p id="total-flights-stat" class="text-3xl font-bold text-gray-900 mt-1">0</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-lg">
+                                <h3 class="text-gray-500 text-sm font-medium">Total Revenue</h3>
+                                <p id="total-revenue-stat" class="text-3xl font-bold text-gray-900 mt-1">$0.00</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Manage Flights Page -->
+                    <div id="admin-flights-page" class="admin-page fade-in">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold">Manage Flights</h2>
+                            <button onclick="showModal('add-flight-modal')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-300 flex items-center space-x-2">
+                                <span data-lucide="plus" class="w-5 h-5"></span>
+                                <span>Add New Flight</span>
+                            </button>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-lg overflow-x-auto">
+                            <table class="w-full min-w-max">
+                                <thead class="bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight No.</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seats</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-flights-list" class="divide-y divide-gray-200">
+                                    <!-- Admin flights list will be injected here by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Admin Passenger Lists Page -->
+                    <div id="admin-passengers-page" class="admin-page fade-in">
+                        <h2 class="text-2xl font-bold mb-4">Passenger Lists</h2>
+                        <div class="bg-white rounded-lg shadow-lg overflow-x-auto">
+                            <table class="w-full min-w-max">
+                                <thead class="bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight No.</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Passenger Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-passengers-list" class="divide-y divide-gray-200">
+                                    <!-- Admin passengers list will be injected here by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal for Adding Flight -->
+    <div id="add-flight-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+            <h3 class="text-lg font-semibold mb-4">Add New Flight</h3>
+            <form id="add-flight-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="flight-no" class="block text-sm font-medium text-gray-700">Flight No.</label>
+                        <input type="text" id="flight-no" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label for="airline" class="block text-sm font-medium text-gray-700">Airline</label>
+                        <input type="text" id="airline" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="modal-from" class="block text-sm font-medium text-gray-700">From</label>
+                        <input type="text" id="modal-from" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" placeholder="JFK" required>
+                    </div>
+                    <div>
+                        <label for="modal-to" class="block text-sm font-medium text-gray-700">To</label>
+                        <input type="text" id="modal-to" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" placeholder="LHR" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="modal-dept-time" class="block text-sm font-medium text-gray-700">Departure Time</label>
+                        <input type="text" id="modal-dept-time" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" placeholder="08:00 AM" required>
+                    </div>
+                    <div>
+                        <label for="modal-arr-time" class="block text-sm font-medium text-gray-700">Arrival Time</label>
+                        <input type="text" id="modal-arr-time" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" placeholder="08:00 PM" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="modal-seats" class="block text-sm font-medium text-gray-700">Total Seats</label>
+                        <input type="number" id="modal-seats" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label for="modal-price" class="block text-sm font-medium text-gray-700">Price ($)</label>
+                        <input type="number" id="modal-price" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm" required>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="hideModal('add-flight-modal')" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">Add Flight</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Mock Database ---
+        let mockFlights = [
+            { id: 1, flightNo: 'BA246', airline: 'British Airways', from: 'JFK', to: 'LHR', departureTime: '08:00 AM', arrivalTime: '08:00 PM', seats: 150, price: 620 },
+            { id: 2, flightNo: 'AA100', airline: 'American Airlines', from: 'JFK', to: 'LHR', departureTime: '10:30 AM', arrivalTime: '10:30 PM', seats: 180, price: 590 },
+            { id: 3, flightNo: 'VS4', airline: 'Virgin Atlantic', from: 'JFK', to: 'LHR', departureTime: '05:00 PM', arrivalTime: '05:00 AM', seats: 120, price: 650 },
+            { id: 4, flightNo: 'AF007', airline: 'Air France', from: 'JFK', to: 'CDG', departureTime: '06:00 PM', arrivalTime: '07:50 AM', seats: 160, price: 710 },
+        ];
+        let mockBookings = [];
+        let selectedFlight = null;
+
+        // --- Page Navigation ---
+        let activeView = 'customer-view';
+        let activeCustomerPage = 'search-page';
+        let activeAdminPage = 'admin-dashboard-page';
+
+        function showPage(view, pageId) {
+            // Hide all main views
+            document.getElementById('customer-view').classList.remove('active');
+            document.getElementById('admin-view').classList.remove('active');
+            
+            // Show the selected main view
+            const viewElement = document.getElementById(view);
+            viewElement.classList.add('active');
+            
+            if (view === 'customer-view') {
+                // Hide all customer pages
+                viewElement.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                // Show the selected customer page
+                const pageElement = document.getElementById(pageId);
+                if (pageElement) {
+                    pageElement.classList.add('active');
+                    activeCustomerPage = pageId;
+                }
+            } else if (view === 'admin-view') {
+                showAdminPage(pageId);
+            }
+
+            // Update data on page load
+            if (pageId === 'my-bookings-page') renderMyBookings();
+            if (view === 'admin-view') updateAdminData();
+        }
+
+        function showAdminPage(pageId) {
+            // Hide all admin pages
+            document.getElementById('admin-view').querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+            // Show the selected admin page
+            const pageElement = document.getElementById(pageId);
+            if (pageElement) {
+                pageElement.classList.add('active');
+                activeAdminPage = pageId;
+            }
+            // Update nav link styles
+            document.querySelectorAll('.admin-nav-link').forEach(link => {
+                link.classList.remove('bg-gray-100');
+                if (link.getAttribute('onclick').includes(pageId)) {
+                    link.classList.add('bg-gray-100');
+                }
+            });
+            // Update data on page load
+            if (pageId === 'admin-dashboard-page') updateAdminStats();
+            if (pageId === 'admin-flights-page') renderAdminFlights();
+            if (pageId === 'admin-passengers-page') renderAdminPassengers();
+        }
+
+        // --- Modal ---
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // --- Customer Flow ---
+        document.getElementById('search-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const from = document.getElementById('departure-airport').value;
+            const to = document.getElementById('arrival-airport').value;
+            
+            const results = mockFlights.filter(f => 
+                f.from.toLowerCase().includes(from.split('(')[0].trim().toLowerCase()) &&
+                f.to.toLowerCase().includes(to.split('(')[0].trim().toLowerCase())
+            );
+            
+            document.getElementById('route-title').textContent = ${from.split('(')[0]} to ${to.split('(')[0]};
+            renderFlightResults(results);
+            showPage('customer-view', 'results-page');
+        });
+
+        function renderFlightResults(results) {
+            const list = document.getElementById('flight-results-list');
+            list.innerHTML = '';
+            if (results.length === 0) {
+                list.innerHTML = <div class="bg-white p-6 rounded-lg shadow-lg text-center text-gray-600">No flights found for this route.</div>;
+                return;
+            }
+            results.forEach(flight => {
+                list.innerHTML += `
+                    <div class="bg-white p-5 rounded-lg shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                            <span data-lucide="plane" class="w-10 h-10 text-blue-600"></span>
+                            <div>
+                                <div class="text-lg font-semibold">${flight.airline} (${flight.flightNo})</div>
+                                <div class="text-gray-600">${flight.from} &rarr; ${flight.to}</div>
+                            </div>
+                        </div>
+                        <div class="text-gray-700 text-sm sm:text-base sm:text-center">
+                            <strong>${flight.departureTime}</strong> &mdash; <strong>${flight.arrivalTime}</strong>
+                        </div>
+                        <div class="flex flex-col items-start sm:items-end w-full sm:w-auto mt-4 sm:mt-0">
+                            <div class="text-2xl font-bold text-gray-900">$${flight.price}</div>
+                            <button onclick="selectFlight(${flight.id})" class="mt-2 bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-300">
+                                Select Flight
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function selectFlight(flightId) {
+            selectedFlight = mockFlights.find(f => f.id === flightId);
+            const summary = document.getElementById('flight-summary');
+            summary.innerHTML = `
+                <p class="text-gray-600">${selectedFlight.airline} (${selectedFlight.flightNo})</p>
+                <p class="font-semibold text-lg">${selectedFlight.from} &rarr; ${selectedFlight.to}</p>
+                <p class="text-sm text-gray-500 mt-2">${new Date(document.getElementById('departure-date').value).toDateString()}</p>
+                <p class="text-sm text-gray-500">${selectedFlight.departureTime} - ${selectedFlight.arrivalTime}</p>
+                <div class="border-t my-4"></div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Price (1 Adult)</span>
+                    <span class="font-bold text-xl">$${selectedFlight.price}</span>
+                </div>
+            `;
+            showPage('customer-view', 'booking-page');
+        }
+
+        document.getElementById('booking-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const bookingId = BK${Math.floor(Math.random() * 90000) + 10000};
+            const newBooking = {
+                id: bookingId,
+                flight: selectedFlight,
+                passenger: {
+                    name: ${document.getElementById('first-name').value} ${document.getElementById('last-name').value},
+                    email: document.getElementById('email').value,
+                },
+                date: new Date(document.getElementById('departure-date').value).toDateString()
+            };
+            mockBookings.push(newBooking);
+            
+            document.getElementById('booking-id').textContent = bookingId;
+            showPage('customer-view', 'confirmation-page');
+            
+            // Reset form
+            e.target.reset();
+        });
+
+        function renderMyBookings() {
+            const list = document.getElementById('bookings-list');
+            list.innerHTML = '';
+            if (mockBookings.length === 0) {
+                list.innerHTML = <div class="bg-white p-6 rounded-lg shadow-lg text-center text-gray-600">You have no active bookings.</div>;
+                return;
+            }
+            mockBookings.forEach(booking => {
+                list.innerHTML += `
+                    <div class="bg-white p-5 rounded-lg shadow-lg">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                            <div>
+                                <span class="text-sm font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded">${booking.id}</span>
+                                <h3 class="text-xl font-semibold mt-1">${booking.flight.from} &rarr; ${booking.flight.to}</h3>
+                                <p class="text-gray-600">${booking.flight.airline} (${booking.flight.flightNo})</p>
+                                <p class="text-gray-500 text-sm">${booking.date}</p>
+                            </div>
+                            <div class="mt-4 sm:mt-0 sm:text-right">
+                                <p class="text-gray-800">Passenger: ${booking.passenger.name}</p>
+                                <p class="text-gray-600 text-sm">Status: <span class="font-medium text-green-600">Confirmed</span></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Admin Flow ---
+        function updateAdminData() {
+            showAdminPage(activeAdminPage);
+        }
+
+        function updateAdminStats() {
+            document.getElementById('total-bookings-stat').textContent = mockBookings.length;
+            document.getElementById('total-flights-stat').textContent = mockFlights.length;
+            const totalRevenue = mockBookings.reduce((sum, b) => sum + b.flight.price, 0);
+            document.getElementById('total-revenue-stat').textContent = $${totalRevenue.toFixed(2)};
+        }
+
+        function renderAdminFlights() {
+            const list = document.getElementById('admin-flights-list');
+            list.innerHTML = '';
+            mockFlights.forEach(f => {
+                list.innerHTML += `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${f.flightNo}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${f.from} &rarr; ${f.to}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${f.departureTime} - ${f.arrivalTime}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${f.seats}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">$${f.price}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="#" class="text-red-600 hover:text-red-900" onclick="deleteFlight(${f.id})">Delete</a>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function deleteFlight(flightId) {
+            mockFlights = mockFlights.filter(f => f.id !== flightId);
+            renderAdminFlights();
+            updateAdminStats();
+        }
+
+        document.getElementById('add-flight-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newFlight = {
+                id: mockFlights.length > 0 ? Math.max(...mockFlights.map(f => f.id)) + 1 : 1,
+                flightNo: document.getElementById('flight-no').value,
+                airline: document.getElementById('airline').value,
+                from: document.getElementById('modal-from').value.toUpperCase(),
+                to: document.getElementById('modal-to').value.toUpperCase(),
+                departureTime: document.getElementById('modal-dept-time').value,
+                arrivalTime: document.getElementById('modal-arr-time').value,
+                seats: parseInt(document.getElementById('modal-seats').value),
+                price: parseFloat(document.getElementById('modal-price').value),
+            };
+            mockFlights.push(newFlight);
+            renderAdminFlights();
+            updateAdminStats();
+            hideModal('add-flight-modal');
+            e.target.reset();
+        });
+
+        function renderAdminPassengers() {
+            const list = document.getElementById('admin-passengers-list');
+            list.innerHTML = '';
+            if (mockBookings.length === 0) {
+                list.innerHTML = <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No bookings found.</td></tr>;
+                return;
+            }
+            mockBookings.forEach(b => {
+                list.innerHTML += `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${b.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${b.flight.flightNo}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${b.passenger.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${b.passenger.email}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('departure-date');
+            if (dateInput) {
+                dateInput.value = today;
+                dateInput.min = today;
+            }
+            
+            // Set default date for booking form
+            const dobInput = document.getElementById('dob');
+            if(dobInput) dobInput.max = new Date().toISOString().split('T')[0];
+
+            // Render icons
+            lucide.createIcons();
+            
+            // Show initial page
+            showPage('customer-view', 'search-page');
+        });
+    </script>
+</body>
+</html>
